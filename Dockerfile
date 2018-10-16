@@ -1,7 +1,5 @@
 FROM python:3-alpine
 
-MAINTAINER Leonid Makarov <leonid.makarov@blinkreaction.com>
-
 RUN apk add --update --no-cache \
 	bash \
 	curl \
@@ -22,14 +20,14 @@ RUN curl -sSL https://github.com/google/cadvisor/releases/download/v$CADVISOR_VE
 RUN /usr/local/bin/pip install Flask docker-py && \
  	rm -rf /var/cache/apk/*
 
-COPY webui /var/www/webui
+COPY webui /var/www
 
 # Generate SSL certificate and key
 RUN openssl req -batch -nodes -newkey rsa:2048 -keyout /etc/nginx/server.key -out /tmp/server.csr && \
     openssl x509 -req -days 365 -in /tmp/server.csr -signkey /etc/nginx/server.key -out /etc/nginx/server.crt; rm /tmp/server.csr
 
 COPY conf/nginx.conf /etc/nginx/nginx.conf
-RUN echo "docksal:$(openssl passwd -apr1 docksal)" >> /etc/nginx/.htpasswd
+RUN echo "bconnect:$(openssl passwd -apr1 kiekma)" >> /etc/nginx/.htpasswd
 
 COPY conf/supervisord.conf /etc/supervisor.d/webui.ini
 
