@@ -1,5 +1,7 @@
 FROM python:3-alpine
 
+MAINTAINER Leonid Makarov <leonid.makarov@blinkreaction.com>
+
 RUN apk add --update --no-cache \
 	bash \
 	curl \
@@ -23,26 +25,11 @@ RUN /usr/local/bin/pip install Flask docker-py && \
 COPY webui /var/www/webui
 
 # Generate SSL certificate and key
-RUN set -xe; \
-	apk add --update --no-cache \
-		openssl \
-	; \
-	# Create a folder for custom vhost certs (mount custom certs here)
-	mkdir -p /etc/certs/custom; \
-	# Generate a self-signed fallback cert
-	openssl req \
-		-batch \
-		-newkey rsa:4086 \
-		-x509 \
-		-nodes \
-		-sha256 \
-		-subj "/CN=*.dev.b-connect.eu" \
-		-days 3650 \
-		-out /etc/certs/server.crt \
-		-keyout /etc/certs/server.key;
+RUN openssl req -batch -nodes -newkey rsa:2048 -subj "/CN=*.dev.b-connect.eu" -keyout /etc/nginx/server.key -out /tmp/server.csr && \
+    openssl x509 -req -days 365 -in /tmp/server.csr -signkey /etc/nginx/server.key -out /etc/nginx/server.crt; rm /tmp/server.csr
 
 COPY conf/nginx.conf /etc/nginx/nginx.conf
-RUN echo "bconnect:$(openssl passwd -apr1 kiekma)" >> /etc/nginx/.htpasswd
+RUN echo "docksal:$(openssl passwd -apr1 docksal)" >> /etc/nginx/.htpasswd
 
 COPY conf/supervisord.conf /etc/supervisor.d/webui.ini
 
