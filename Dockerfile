@@ -23,7 +23,14 @@ RUN /usr/local/bin/pip install Flask docker-py && \
 COPY webui /var/www/webui
 
 # Generate SSL certificate and key
-RUN openssl req \
+RUN set -xe; \
+	apk add --update --no-cache \
+		openssl \
+	; \
+	# Create a folder for custom vhost certs (mount custom certs here)
+	mkdir -p /etc/certs/custom; \
+	# Generate a self-signed fallback cert
+	openssl req \
 		-batch \
 		-newkey rsa:4086 \
 		-x509 \
@@ -31,9 +38,8 @@ RUN openssl req \
 		-sha256 \
 		-subj "/CN=*.dev.b-connect.eu" \
 		-days 3650 \
-		-out /tmp/server.csr \
-    -keyout /etc/nginx/server.key; \
-    openssl x509 -req -days 365 -in /tmp/server.csr -signkey /etc/nginx/server.key -out /etc/nginx/server.crt; rm /tmp/server.csr
+		-out /etc/certs/server.crt \
+		-keyout /etc/certs/server.key;
 
 COPY conf/nginx.conf /etc/nginx/nginx.conf
 RUN echo "bconnect:$(openssl passwd -apr1 kiekma)" >> /etc/nginx/.htpasswd
