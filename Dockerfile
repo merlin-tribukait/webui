@@ -1,7 +1,30 @@
-FROM docksal/webui
+FROM python:3-alpine
 
-RM /var/www/webui
+RUN apk add --update --no-cache \
+	bash \
+	curl \
+	supervisor \
+	openssl \
+	nginx \
+	&& rm -rf /var/cache/apk/*
+
+ENV CADVISOR_VERSION 0.24.1
+
+RUN chown -R nginx:nginx /var/lib/nginx
+
+# Add cAdvisor
+RUN curl -sSL https://github.com/google/cadvisor/releases/download/v$CADVISOR_VERSION/cadvisor -o /usr/local/bin/cadvisor && \
+  chmod +x /usr/local/bin/*
+
+# Add webui
+RUN /usr/local/bin/pip install Flask docker-py && \
+ 	rm -rf /var/cache/apk/*
+
 COPY webui /var/www
+
+# Generate SSL certificate and key
+RUN openssl req -batch -nodes -newkey rsa:2048 -keyout /etc/nginx/server.key -out /tmp/server.csr && \
+    openssl x509 -req -days 365 -in /tmp/server.csr -signkey /etc/nginx/server.key -out /etc/nginx/server.crt; rm /tmp/server.csr
 
 COPY conf/nginx.conf /etc/nginx/nginx.conf
 RUN echo "bconnect:$(openssl passwd -apr1 kiekma)" >> /etc/nginx/.htpasswd
