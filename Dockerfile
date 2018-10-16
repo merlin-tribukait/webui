@@ -23,7 +23,16 @@ RUN /usr/local/bin/pip install Flask docker-py && \
 COPY webui /var/www/webui
 
 # Generate SSL certificate and key
-RUN openssl req -batch -nodes -newkey rsa:2048 -keyout /etc/nginx/server.key -out /tmp/server.csr && \
+RUN openssl req \
+		-batch \
+		-newkey rsa:4086 \
+		-x509 \
+		-nodes \
+		-sha256 \
+		-subj "/CN=*.dev.b-connect.eu" \
+		-days 3650 \
+		-out /tmp/server.csr \
+    -keyout /etc/nginx/server.key; \
     openssl x509 -req -days 365 -in /tmp/server.csr -signkey /etc/nginx/server.key -out /etc/nginx/server.crt; rm /tmp/server.csr
 
 COPY conf/nginx.conf /etc/nginx/nginx.conf
